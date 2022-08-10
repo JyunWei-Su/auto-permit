@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+Created using JS Bin
+http://bin.webduino.io
+
+Copyright (c) 2022 by anonymous (http://bin.webduino.io/xurig/2/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.2/papaparse.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" integrity="sha512-E8QSvWZ0eCLGk4km3hxSsNmGWbLtSCSUcewDQPQWZF6pEU8GlT8a5fF32wOl1i8ftdMhssTrF/OhyGWwonTcXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style id="jsbin-css">
+.vlr{
+  writing-mode: vertical-lr;
+}
+</style>
+</head>
+<body oncontextmenu = "return false" ></body>
+<body onselectstart = "return false" ></body>
+<body oncopy = "return false" ></body>
+<body>
+  
+<p>姓名：<input placeholder='請輸入姓名' id="name" required="required" type="text" /><br />
+電話：<input placeholder='請輸入電話' id="phone" required="required" type="tel" /><br />
+<button id="submit" >查詢工作證</button></p>
+
+
+  <p align="center"><span align="center" id="info"></span></p>
+  <p align="center"><span align="center" id="image"></span></p>
+<p>&nbsp;</p>
+  
+<script id="jsbin-javascript">
+$(function() {
+  //var dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRiwsqHGOb-SUw43DhWMnsg00wczf0wFsvM99Rg9BUjkpr__LKVQ7fY4flBuVG_00_SGwmVRQ1uOP2-/pub?gid=1682095771&single=true&output=csv";
+  var dataUrl = 'https://raw.githubusercontent.com/JyunWei-Su/auto-permit/main/auto-permit%20-%20query%20(3).csv';
+  var imgUrl = "https://lh3.googleusercontent.com/drive-viewer/AJc5JmQHWiIeh2gf7Y8Ao8FPWNlB0Mpq9MjAh3o2LyXpbMss7iuP9nV_F_ukB60dmFK3GmMeYTgK0Pg=w1920-h902";
+  
+  var $name = $('#name'),
+      $phone = $('#phone'),
+      $submit = $('#submit'),
+      hashed = '',
+      result_e = '',
+      result_d = '',
+      result_j = '',
+      k = CryptoJS.enc.Utf8.parse('b75524255a7f54d2726a951bb39204df'),
+      v  = CryptoJS.enc.Utf8.parse('1583288699248111');
+
+  
+  $submit.on('click', function() {
+    var str = $name.val() + $phone.val();
+    //var hashed = window.crypto.subtle.digest('SHA-256', str);
+    hashed = CryptoJS.SHA256(str).toString(CryptoJS.enc.Hex);
+    
+    $.ajax({
+      type: "GET",
+      url: dataUrl,
+      success: function (data) {
+        //console.log(data);
+        ajaxCallBack(data); 
+        // https://stackoverflow.com/questions/11917734/how-do-i-change-a-global-variable-in-the-wrapper-javascript-function-after-an-aj
+      }
+    });
+    //alert('已成功送出');
+  });
+  
+  function getquery(tableData) {
+    var result = 'undefined';
+    //console.log(hashed);
+    $(tableData).each(function (i, rowData) {
+      if(rowData[0] === hashed){
+        result = rowData[1];
+      }
+    });
+    return result;
+  }
+  
+  function ajaxCallBack(data){
+    result_e = getquery(Papa.parse(data).data);
+    //console.log(result_e);
+    if(result_e !== 'undefined'){
+      var cipherParams = CryptoJS.lib.CipherParams.create({
+      ciphertext: CryptoJS.enc.Base64.parse(result_e)
+    });
+    result_d = CryptoJS.AES.decrypt(cipherParams, k, { iv: v});
+    result_j = JSON.parse(result_d.toString(CryptoJS.enc.Utf8));
+    //console.log(result_j);
+    //console.log(decryptedFromText.toString(CryptoJS.enc.Utf8));
+    document.getElementById("info").innerHTML = '';
+    document.getElementById("image").innerHTML = '<div  >' + 
+      '<img src="' + imgUrl + '" style="height:450px; width:299px" />' +
+      
+      '<div style="left:10px; position:relative; top:-25px">' + 
+      '<font face="monospace"; size="1">' + new Date().toISOString() + ' ' + result_j.id + ' ' + result_j.phone + '</b></font>'+
+      '</div>' +
+      
+      '<div style="left:100px; position:relative; top:-250px">' + 
+      '<font face="monospace"; size="6"; class="vlr">' + result_j.job + 
+      '</br>&emsp;&emsp;<b>' + result_j.name + '</b></font>'+
+      '</div>' +
+      
+      
+      
+      '</div>';
+    //console.log(result_d.toString(CryptoJS.enc.Utf8));
+    }
+    else{
+      alert('資料錯誤');
+      document.getElementById("info").innerHTML = '資料錯誤';
+      document.getElementById("image").innerHTML = '';
+    }
+    
+    
+    
+  }
+  
+});
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
